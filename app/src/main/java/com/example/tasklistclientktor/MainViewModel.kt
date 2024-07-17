@@ -32,6 +32,13 @@ class MainViewModel: ViewModel() {
     private val editId = MutableStateFlow("")
     val editIdState: StateFlow<String> = editId
 
+    private val windowUser = MutableStateFlow(false)
+    val windowUserState: StateFlow<Boolean> = windowUser
+
+    fun openCloseWindowUser(boolean: Boolean){
+        windowUser.value = boolean
+    }
+
     fun deleteTask(id: String){
         val taskListHolder = taskList.value
         taskListHolder.remove(id)

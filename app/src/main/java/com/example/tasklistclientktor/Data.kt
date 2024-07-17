@@ -1,6 +1,7 @@
 package com.example.tasklistclientktor
 
 import android.content.Context
+import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.ktor.client.HttpClient
@@ -8,11 +9,14 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.gson.gson
 import kotlinx.coroutines.*
@@ -49,7 +53,7 @@ object TaskStorage {
     private var oldHashList = mutableSetOf<String>()
     private var idListToIgnore = mutableSetOf<String>()
     private val lock = Any()
-    private val gsonTask = Gson()
+    val gsonTask = Gson()
 
     private lateinit var taskListFile: File
     private lateinit var hashTaskFile: File
@@ -76,14 +80,14 @@ object TaskStorage {
         idListToIgnore = list
     }
 
-    private fun saveToFile() {
-        synchronized(lock) {
-            taskListFile.writeText(gsonTask.toJson(taskList.value))
-            hashTaskFile.writeText(gsonTask.toJson(hashTask))
-            oldHashListFile.writeText(gsonTask.toJson(oldHashList))
-            connectionParametersFile.writeText(gsonTask.toJson(connectionParameters.value))
+        private fun saveToFile() {
+            synchronized(lock) {
+                taskListFile.writeText(gsonTask.toJson(taskList.value))
+                hashTaskFile.writeText(gsonTask.toJson(hashTask))
+                oldHashListFile.writeText(gsonTask.toJson(oldHashList))
+                connectionParametersFile.writeText(gsonTask.toJson(connectionParameters.value))
+            }
         }
-    }
 
     private fun loadFromFile() {
         synchronized(lock) {
@@ -119,7 +123,7 @@ object TaskStorage {
     }
 
     private fun createAddress(): String {
-        return "http://${connectionParameters.value.ipAddress}:${connectionParameters.value.portAddress}"
+        return "https://${connectionParameters.value.ipAddress}"
 
     }
 
@@ -161,6 +165,9 @@ object TaskStorage {
             val response1 = makeHttpClient().use { client ->
                 try {
                     client.get("${createAddress()}/checkTaskList") {
+                        headers {
+                            append(HttpHeaders.Authorization, "Basic ${encodeCredentials()}")
+                        }
                         contentType(ContentType.Application.Json)
                         parameter("hash", hash)
                     }.bodyAsText()
@@ -172,6 +179,12 @@ object TaskStorage {
             checkReceived(response1)
             onClick()
         }
+    }
+
+    fun encodeCredentials(): String {
+        val user = UserRepository.getUser()
+        val credentials = "${user.name}:${user.password}"
+        return Base64.encodeToString(credentials.toByteArray(), Base64.NO_WRAP)
     }
 
     private suspend fun checkReceived(responseHash: String?) {
@@ -213,6 +226,9 @@ object TaskStorage {
             makeHttpClient().use { client ->
                 try {
                     client.post("${createAddress()}/updateTaskList") {
+                        headers {
+                            append(HttpHeaders.Authorization, "Basic ${encodeCredentials()}")
+                        }
                         contentType(ContentType.Application.Json)
                         header("Hash", hash)
                         setBody(taskListJson)
@@ -232,6 +248,9 @@ object TaskStorage {
             makeHttpClient().use { client ->
                 try {
                     client.post("${createAddress()}/updateIgnoreID") {
+                        headers {
+                            append(HttpHeaders.Authorization, "Basic ${encodeCredentials()}")
+                        }
                         contentType(ContentType.Application.Json)
                         header("Hash", hash)
                         setBody(ignoreList)
@@ -248,6 +267,9 @@ object TaskStorage {
             makeHttpClient().use { client ->
                 try {
                     val response: String = client.get("${createAddress()}/downlandTaskList") {
+                        headers {
+                            append(HttpHeaders.Authorization, "Basic ${encodeCredentials()}")
+                        }
                         accept(ContentType.Application.Json)
                     }.bodyAsText()
 
@@ -270,6 +292,9 @@ object TaskStorage {
             makeHttpClient().use { client ->
                 try {
                     val response: String = client.get("${createAddress()}/downlandIgnoreTask") {
+                        headers {
+                            append(HttpHeaders.Authorization, "Basic ${encodeCredentials()}")
+                        }
                         accept(ContentType.Application.Json)
                     }.bodyAsText()
 

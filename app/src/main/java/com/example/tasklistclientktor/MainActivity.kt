@@ -1,6 +1,5 @@
 package com.example.tasklistclientktor
 
-import android.app.Dialog
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +44,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         TaskStorage.start(this)
+        UserRepository.start(this)
         setContent {
             TaskListClientKtorTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -61,10 +60,21 @@ fun MainScreen(modifier: Modifier, viewModel: MainViewModel) {
     val test by TaskStorage.responseState.collectAsState()
     val dialogEdit by viewModel.dialogEditState.collectAsState()
     val editId by viewModel.editIdState.collectAsState()
+    val windowUser by viewModel.windowUserState.collectAsState()
     Column(modifier = modifier
         .fillMaxSize(),
         verticalArrangement = Arrangement.Center) {
-        SetNewIp()
+        Button(
+            onClick = {
+                viewModel.openCloseWindowUser(true)
+            }, colors = ButtonDefaults.buttonColors(
+                containerColor = Color(
+                    0xFF064F23
+                ), disabledContainerColor = Color(0xFF363636)
+            ), modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Ustawienia łączności", fontSize = 24.sp, color = Color(0xffffffff))
+        }
         Button(onClick = {
             TaskStorage.checkFile(onClick = { viewModel.updateList() })
         }, colors = ButtonDefaults.buttonColors(containerColor = Color(
@@ -77,6 +87,11 @@ fun MainScreen(modifier: Modifier, viewModel: MainViewModel) {
     }
     if (dialogEdit){
         DialogEdit(viewModel = viewModel, id = editId)
+    }
+    if (windowUser){
+        DialogUser(onDismissRequest = {
+            viewModel.openCloseWindowUser(false)
+        })
     }
 }
 
@@ -193,36 +208,6 @@ fun CreateNewTask(viewModel: MainViewModel){
     }
 }
 
-@Composable
-fun SetNewIp(){
-    val value by TaskStorage.connectionParametersState.collectAsState()
-    var valueTitle by rememberSaveable { mutableStateOf(value.ipAddress) }
-    var valueText by rememberSaveable { mutableStateOf(value.portAddress) }
-    val context = LocalContext.current
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TextField(
-            value = valueTitle,
-            onValueChange = { valueTitle = it },
-            label = { Text(text = "Adres Ip") },
-            modifier = Modifier.fillMaxWidth()
-                .padding(5.dp)
-        )
-        TextField(
-            value = valueText,
-            onValueChange = { valueText = it },
-            label = { Text(text = "Adres Portu") },
-            modifier = Modifier.fillMaxWidth()
-                .padding(5.dp)
-        )
-        Button(onClick = {
-            TaskStorage.checkFile(onClick = { TaskStorage.updateConnectionParameters(valueTitle, valueText) })
-        }, colors = ButtonDefaults.buttonColors(containerColor = Color(
-            0xFF064F23), disabledContainerColor = Color(0xFF363636)
-        ), modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Zmień adres", fontSize = 24.sp, color = Color(0xffffffff))
-        }
-    }
-}
 
 @Preview(showBackground = true, device = "id:pixel_8_pro",
     uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
