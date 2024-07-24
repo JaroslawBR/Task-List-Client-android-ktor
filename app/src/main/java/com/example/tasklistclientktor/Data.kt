@@ -207,7 +207,7 @@ object TaskStorage {
                     response.value = serverInput
                 }
                 "filesSynchronized" -> {
-                    response.value = "Files synchronized"
+                    response.value = serverInput
                     return
                 }
                 else -> {
